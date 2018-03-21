@@ -1,0 +1,12 @@
+{
+  "name": "frappejs-web",
+  "version": "1.0.0",
+  "description": "Frappe JS Webserver",
+  "main": "index.js",
+  "repository": "https://github.com/revant/frappejs-web",
+  "author": "Revant Nandgaonkar",
+  "license": "MIT",
+  "dependencies": {
+    "frappejs": "link:../frappejs"
+  }
+}
