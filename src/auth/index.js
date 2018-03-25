@@ -71,30 +71,33 @@ passport.use(new ClientPasswordStrategy(verifyClient));
  * the authorizing user.
  */
 passport.use(new BearerStrategy(
-  (accessToken, done) => {
-    db.accessTokens.find(accessToken, (error, token) => {
-      if (error) return done(error);
-      if (!token) return done(null, false);
-      if (token.userId) {
-        db.users.findById(token.userId, (error, user) => {
-          if (error) return done(error);
-          if (!user) return done(null, false);
+  async(accessToken, done) => {
+    let filters = {accessToken:accessToken}
+    var bearerToken = null;
+    try {
+      bearerToken = await frappe.db.getValue('Session', JSON.stringify(filters));
+      if (!bearerToken) return done(null, false);
+      if (bearerToken.username) {
+        frappe.db.get("User", username).then((success) => {
+          if (!success.username) return done(null, false);
+          const user = createUserFromDocType(success);
           // To keep this example simple, restricted scopes are not implemented,
           // and this is just for illustrative purposes.
           done(null, user, { scope: '*' });
-        });
+        }).catch(error => done(error));
       } else {
-        // The request came from a client only since userId is null,
-        // therefore the client is passed back instead of a user.
-        db.clients.findByClientId(token.clientId, (error, client) => {
-          if (error) return done(error);
-          if (!client) return done(null, false);
+        let session = await frappe.db.get('Session', bearerToken);
+        frappe.db.get("OAuthClient", session.clientId).then((success) => {
+          if (!success.name) return done(null, false);
+          let client = createClientFromDocType(success);
           // To keep this example simple, restricted scopes are not implemented,
           // and this is just for illustrative purposes.
           done(null, client, { scope: '*' });
-        });
+        }).catch(error => done(error));
       }
-    });
+    } catch (error) {
+      if (error) return done(error);
+    }
   }
 ));
 
