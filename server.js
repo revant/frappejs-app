@@ -2,6 +2,7 @@ const frappe = require('frappejs');
 const server = require('frappejs/server');
 const authAPI = require('./src/authAPI');
 const restAPI = require('frappejs/server/restAPI');
+const config = require('./config');
 
 server.start({
     backend: 'sqlite',
@@ -9,11 +10,6 @@ server.start({
     connectionParams: {dbPath: './test.db'},
     static: './'
 }).then(()=>{
-    authAPI.setup(frappe.app);
+    authAPI.setup(frappe.app, config);
     restAPI.setup(frappe.app);
-    frappe.app.use((req, res, next) => {
-        console.log(`[${req.method}] ${req.url}`);
-        console.log(req.session);
-        next();
-    });
 });
