@@ -1,24 +1,6 @@
 const frappe = require('frappejs');
 const Store = require('express-session/session/store');
 
-/* istanbul ignore next */
-var defer = typeof setImmediate === 'function'
-  ? setImmediate
-  : function(fn){ process.nextTick(fn.bind.apply(fn, arguments)) };
-
-/**
-* One day in seconds.
-*/
-var oneDay = 86400;
-
-/**
-* Return the `SqlStore` extending `express`'s session Store.
-*
-* @param {object} express session
-* @return {Function}
-* @api public
-*/
-
 /**
 * FrappeSessionStore Express's session Store.
 */
@@ -84,7 +66,7 @@ module.exports = class FrappeSessionStore extends Store {
 
     destroy (sid, callback) {
         callback = callback || function(){};
-        frappe.db.delete_doc('Session', sid).then((success) => {
+        frappe.db.delete('Session', sid).then((success) => {
             callback(null, success);
         }).catch(error => callback(error, null));
     }
@@ -96,7 +78,7 @@ module.exports = class FrappeSessionStore extends Store {
         }).catch( e => callback(e, null))
 
         for (const session of sessions) {
-            frappe.db.delete_doc('Session', session.name);
+            frappe.db.delete('Session', session.name);
             callback(null, session.session);
         }
     };
