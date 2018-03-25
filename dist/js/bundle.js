@@ -57581,15 +57581,57 @@ var desk = (function () {
         }
     };
 
+    var OAuthClient = {
+        "name": "OAuthClient",
+        "doctype": "DocType",
+        "isSingle": 0,
+        "isChild": 0,
+        "keywordFields": [
+            "name",
+            "appName"
+        ],
+        "fields": [
+            {
+                "fieldname": "name",
+                "label": "Client ID",
+                "fieldtype": "Data"
+            },
+            {
+                "fieldname": "clientSecret",
+                "label": "Client Secret",
+                "fieldtype": "Data"
+            },
+            {
+                "fieldname": "appName",
+                "label": "App Name",
+                "fieldtype": "Data"
+            },
+            {
+                "fieldname": "isTrusted",
+                "label": "Trusted App",
+                "fieldtype": "Check"
+            }
+        ]
+    };
+
+    var models$1 = {
+        models: {
+            OAuthClient: OAuthClient
+        }
+    };
+
     // start server
     client.start({
         columns: 3,
         server: 'localhost:8000',
     }).then(() => {
-        frappejs.desk.addSidebarItem('Home', '#');
-        frappejs.desk.addSidebarItem('New User', '#new/User');
+        frappejs.registerModels(models$1, 'client');
 
-        frappejs.router.default = '#list/User';
+        frappejs.desk.menu.addItem('User', '#list/User');
+        frappejs.desk.menu.addItem('Session', '#list/Session');
+        frappejs.desk.menu.addItem('OAuthClient', '#list/OAuthClient');
+
+        frappejs.router.default = '#list/Session';
         frappejs.router.show(window.location.hash);
     });
 
