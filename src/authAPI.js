@@ -42,7 +42,6 @@ module.exports = {
     },
 
     setupTemplating(app){
-        console.log(__dirname);
         const nunjucksEnv = nunjucks.configure(path.resolve(__dirname, '../'), {
             express: app
         });
@@ -59,7 +58,7 @@ module.exports = {
         let sess = {
             saveUninitialized: true,
             resave: false,
-            store: new FrappeSessionStore(),
+            store: new FrappeSessionStore({expires:config.session.expires}),
             secret: config.session.secret,
             cookie : { maxAge: config.session.cookieMaxAge, httpOnly: false }
         };
