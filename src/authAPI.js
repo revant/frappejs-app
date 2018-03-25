@@ -8,17 +8,17 @@ const passport = require('passport');
 const nunjucks = require('nunjucks');
 const path = require('path');
 const routes = require('./routes');
-const SessionStore = require('./SessionStore');
-const config = require('../config');
+const FrappeSessionStore = require('./FrappeSessionStore');
 
 module.exports = {
-    setup(app) {
+    setup(app, config=null) {
+        this.setupFrappeApp(app);
         this.setupTemplating(app);
-        app.use(cookieParser());
+        app.use(cookieParser(config.session.cookieSecret));
         app.use(bodyParser.json({ extended: false }));
         app.use(bodyParser.urlencoded({ extended: false }));
         app.use(errorHandler());
-        this.setupSession(app);
+        this.setupSession(app, config);
         app.use(passport.initialize());
         app.use(passport.session());
 
@@ -52,13 +52,13 @@ module.exports = {
         app.set('view options', { layout: true });
     },
 
-    setupSession(app){
+    setupSession(app, config=null){
         let sess = {
             saveUninitialized: true,
             resave: false,
-            // store: new SessionStore(),
+            store: new FrappeSessionStore(),
             secret: config.session.secret,
-            cookie : { httpOnly: true, maxAge: 2419200000 }
+            cookie : { maxAge: config.session.cookieMaxAge, httpOnly: false }
         };
 
         if (app.get('env') === 'production') {
@@ -66,5 +66,14 @@ module.exports = {
             sess.cookie.secure = true // serve secure cookies
         }
         app.use(session(sess));
+    },
+
+    setupFrappeApp(app){
+        app.use((req, res, next) => {
+            console.log(`[${req.method}][${res.statusCode}] ${req.url}`);
+            frappe.request = req;
+            frappe.response = res;
+            next();
+        });
     }
 };

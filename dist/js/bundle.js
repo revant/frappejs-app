@@ -57303,7 +57303,7 @@ var desk = (function () {
                 "fieldname": "name",
                 "label": "Session ID",
                 "fieldtype": "Code",
-                "hidden": 1
+                "hidden": 0
             },
             {
                 "fieldname": "username",
@@ -57312,64 +57312,70 @@ var desk = (function () {
                 "target": "User"
             },
             {
-                "fieldname": "cookie",
-                "label": "Cookie",
+                "fieldname": "session",
+                "label": "Session Data",
                 "fieldtype": "Code",
-                "hidden": 1
+                "hidden": 0
+            },
+            {
+                "fieldname": "headers",
+                "label": "Request Headers",
+                "fieldtype": "Code",
+                "hidden": 0
             },
             {
                 "fieldname": "clientId",
                 "label": "Client ID",
                 "fieldtype": "Code",
-                "hidden": 1
+                "hidden": 0
             },
             {
                 "fieldname": "accessToken",
                 "label": "Access Token",
                 "fieldtype": "Code",
-                "hidden": 1
+                "hidden": 0
             },
             {
                 "fieldname": "refreshToken",
                 "label": "Refresh Token",
                 "fieldtype": "Code",
-                "hidden": 1
+                "hidden": 0
             },
             {
                 "fieldname": "scopes",
                 "label": "Scopes",
                 "fieldtype": "Code",
-                "hidden": 1
+                "hidden": 0
             },
             {
                 "fieldname": "expirationTime",
                 "label": "Expiration Time",
                 "fieldtype": "Data",
-                "hidden": 1
+                "hidden": 0
             },
             {
                 "fieldname": "expiry",
                 "label": "Expiry",
                 "fieldtype": "Int",
-                "hidden": 1
+                "hidden": 0
             },
             {
                 "fieldname": "idToken",
                 "label": "ID Token",
                 "fieldtype": "Code",
-                "hidden": 1
+                "hidden": 0
             },
             {
                 "fieldname": "otp",
                 "label": "OTP",
                 "fieldtype": "Code",
-                "hidden": 1
+                "hidden": 0
             },
             {
                 "fieldname": "authorizationCode",
                 "label": "Authorization Code",
                 "fieldtype": "Code",
-                "hidden": 1
+                "hidden": 0
             }
         ]
     };
