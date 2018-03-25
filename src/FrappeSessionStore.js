@@ -26,7 +26,6 @@ module.exports = class FrappeSessionStore extends Store {
     /**
     * Initialize SessionStore with the given `options`.
     *
-    * @param {Object} options
     * @api public
     */
     constructor(options){
@@ -60,12 +59,17 @@ module.exports = class FrappeSessionStore extends Store {
         let storedSession = await frappe.db.get('Session', sid);
         if (!storedSession.name){
             frappe.db.insert('Session', data)
-            .then(r => callback(null, storedSession.session))
-            .catch(e => callback(e, null));
+            .then(r => console.log("Insert Session Success", r))
+            .catch(e => console.log("Insert Session Failuer", e));
+            // .then(r => callback(null, storedSession.session))
+            // .catch(e => callback(e, null));
         } else {
             frappe.db.update('Session', data)
-            .then(r => callback(null, storedSession.session))
-            .catch(e => callback(e, null));
+            .then(r => console.log("Update Session Success", r))
+            .catch(e => console.log("Update Session Failuer", e));
+            // .then(r => callback(null, storedSession.session))
+            // .catch(e => callback(e, null));
+
         }
     }
 
