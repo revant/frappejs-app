@@ -18,7 +18,7 @@ passport.use(new LocalStrategy(
   (username, password, done) => {
     frappe.db.get("User", username).then((success) => {
       if (success.password !== password) return done(null, false);
-      if (!success.username) return done(null, false);
+      if (!success.name) return done(null, false);
       const user = createUserFromDocType(success);
       done(null, user);
     }).catch((error) => {
@@ -27,7 +27,7 @@ passport.use(new LocalStrategy(
   }
 ));
 
-passport.serializeUser((user, done) =>  done(null, user.username));
+passport.serializeUser((user, done) => done(null, user.username));
 
 passport.deserializeUser((username, done) => {
   frappe.db.get("User", username).then((success) => {
@@ -104,7 +104,7 @@ passport.use(new BearerStrategy(
 function createUserFromDocType(userDoc) {
   return {
     id: userDoc.name,
-    username: userDoc.username,
+    username: userDoc.name,
     password: userDoc.password,
     name: userDoc.full_name
   };

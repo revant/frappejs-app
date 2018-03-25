@@ -1,6 +1,7 @@
 const client = require('frappejs/client');
 const user = require('frappejs/models/doctype/User/User.js');
-const frappe = require('frappejs')
+const frappe = require('frappejs');
+
 // start server
 client.start({
     columns: 3,

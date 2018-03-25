@@ -5,7 +5,7 @@ module.exports = {
     "isChild": 0,
     "keywordFields": [
         "name",
-        "app_name"
+        "appName"
     ],
     "fields": [
         {

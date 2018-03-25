@@ -9,6 +9,7 @@ const nunjucks = require('nunjucks');
 const path = require('path');
 const routes = require('./routes');
 const SessionStore = require('./SessionStore');
+const config = require('../config');
 
 module.exports = {
     setup(app) {
@@ -53,11 +54,11 @@ module.exports = {
 
     setupSession(app){
         let sess = {
-            // store: new SessionStore(),
-            secret: 'cats',
-            resave: false,
             saveUninitialized: true,
-            cookie : {}
+            resave: false,
+            // store: new SessionStore(),
+            secret: config.session.secret,
+            cookie : { httpOnly: true, maxAge: 2419200000 }
         };
 
         if (app.get('env') === 'production') {

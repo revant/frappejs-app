@@ -1,5 +1,7 @@
 const frappe = require('frappejs');
 const server = require('frappejs/server');
+const authAPI = require('./src/authAPI');
+const restAPI = require('frappejs/server/restAPI');
 
 server.start({
     backend: 'sqlite',
@@ -7,13 +9,11 @@ server.start({
     connectionParams: {dbPath: './test.db'},
     static: './'
 }).then(()=>{
+    authAPI.setup(frappe.app);
+    restAPI.setup(frappe.app);
     frappe.app.use((req, res, next) => {
         console.log(`[${req.method}] ${req.url}`);
+        console.log(req.session);
         next();
     });
-    // let oc = frappe.getMeta("OAuthClient");
-    // oc.then((success) => {
-    //     console.log(success);
-    // }).catch(error => console.log(error, null));
-    // console.log(oc);
 });

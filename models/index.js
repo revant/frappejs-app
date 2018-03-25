@@ -1,5 +1,5 @@
 module.exports = {
     models: {
-        OAuthClient: require('./doctype/OAuthClient/OAuthClient.js')
+        OAuthClient: require('./doctype/OAuthClient/OAuthClient')
     }
 }

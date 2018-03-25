@@ -4590,7 +4590,7 @@ var desk = (function () {
     }
     }).call(commonjsGlobal);
 
-    //# sourceMappingURL=showdown.js.map
+
     });
 
     var moment = createCommonjsModule(function (module, exports) {
@@ -23034,7 +23034,6 @@ var desk = (function () {
     Popper.Utils = (typeof window !== 'undefined' ? window : global).PopperUtils;
     Popper.placements = placements;
     Popper.Defaults = Defaults;
-    //# sourceMappingURL=popper.js.map
 
     var popper = /*#__PURE__*/Object.freeze({
         default: Popper
@@ -26933,7 +26932,7 @@ var desk = (function () {
     Object.defineProperty(exports, '__esModule', { value: true });
 
     })));
-    //# sourceMappingURL=bootstrap.js.map
+
     });
 
     unwrapExports(bootstrap);
@@ -56606,7 +56605,7 @@ var desk = (function () {
     /***/ })
     /******/ ]);
     });
-    //# sourceMappingURL=nunjucks.js.map
+
     });
 
     unwrapExports(nunjucks);
@@ -57317,6 +57316,60 @@ var desk = (function () {
                 "label": "Cookie",
                 "fieldtype": "Code",
                 "hidden": 1
+            },
+            {
+                "fieldname": "clientId",
+                "label": "Client ID",
+                "fieldtype": "Code",
+                "hidden": 1
+            },
+            {
+                "fieldname": "accessToken",
+                "label": "Access Token",
+                "fieldtype": "Code",
+                "hidden": 1
+            },
+            {
+                "fieldname": "refreshToken",
+                "label": "Refresh Token",
+                "fieldtype": "Code",
+                "hidden": 1
+            },
+            {
+                "fieldname": "scopes",
+                "label": "Scopes",
+                "fieldtype": "Code",
+                "hidden": 1
+            },
+            {
+                "fieldname": "expirationTime",
+                "label": "Expiration Time",
+                "fieldtype": "Data",
+                "hidden": 1
+            },
+            {
+                "fieldname": "expiry",
+                "label": "Expiry",
+                "fieldtype": "Int",
+                "hidden": 1
+            },
+            {
+                "fieldname": "idToken",
+                "label": "ID Token",
+                "fieldtype": "Code",
+                "hidden": 1
+            },
+            {
+                "fieldname": "otp",
+                "label": "OTP",
+                "fieldtype": "Code",
+                "hidden": 1
+            },
+            {
+                "fieldname": "authorizationCode",
+                "label": "Authorization Code",
+                "fieldtype": "Code",
+                "hidden": 1
             }
         ]
     };
@@ -57432,19 +57485,13 @@ var desk = (function () {
         "fields": [
             {
                 "fieldname": "name",
-                "label": "Name",
-                "fieldtype": "Data",
-                "hidden": 1
-            },
-            {
-                "fieldname": "username",
-                "label": "Name",
+                "label": "Username",
                 "fieldtype": "Data",
                 "required": 1
             },
             {
                 "fieldname": "password",
-                "label": "password",
+                "label": "Password",
                 "fieldtype": "Password",
                 "required": 1
             },
@@ -57459,6 +57506,12 @@ var desk = (function () {
                 "label": "Roles",
                 "fieldtype": "Table",
                 "childtype": "UserRole"
+            },
+            {
+                "fieldname": "userId",
+                "label": "User ID",
+                "fieldtype": "Data",
+                "hidden": 1
             }
         ]
     };
