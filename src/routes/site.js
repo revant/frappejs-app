@@ -8,6 +8,7 @@ module.exports.loginForm = (request, response) => response.render('src/views/log
 module.exports.login = passport.authenticate('local', { successReturnToOrRedirect: '/', failureRedirect: '/login' });
 
 module.exports.logout = (request, response) => {
+  request.session.destroy();
   request.logout();
   response.redirect('/');
 };
