@@ -175,7 +175,7 @@ module.exports.authorization = [
     // });
   }),
   (request, response) => {
-    response.render('dialog', { transactionId: request.oauth2.transactionID, user: request.user, client: request.oauth2.client });
+    response.render('src/views/dialog', { transactionId: request.oauth2.transactionID, user: request.user, client: request.oauth2.client });
   },
 ];
 

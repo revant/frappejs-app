@@ -14,5 +14,5 @@ module.exports.logout = (request, response) => {
 
 module.exports.account = [
   login.ensureLoggedIn(),
-  (request, response) => response.render('account', { user: request.user }),
+  (request, response) => response.render('src/views/account', { user: request.user }),
 ];
