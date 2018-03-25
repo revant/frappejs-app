@@ -9,6 +9,7 @@ const nunjucks = require('nunjucks');
 const path = require('path');
 const routes = require('./routes');
 const FrappeSessionStore = require('./FrappeSessionStore');
+const login = require('connect-ensure-login');
 
 module.exports = {
     setup(app, config=null) {
@@ -25,7 +26,8 @@ module.exports = {
         // Passport configuration
         require('./auth');
 
-        app.get('/', routes.site.index);
+        app.get('/', (request, response) => response.redirect('/app'));
+        app.get('/app', login.ensureLoggedIn(), (req, res)=> res.render('app'));
         app.get('/login', routes.site.loginForm);
         app.post('/login', routes.site.login);
         app.get('/logout', routes.site.logout);
@@ -40,7 +42,8 @@ module.exports = {
     },
 
     setupTemplating(app){
-        const nunjucksEnv = nunjucks.configure(path.resolve(__dirname, 'views'), {
+        console.log(__dirname);
+        const nunjucksEnv = nunjucks.configure(path.resolve(__dirname, '../'), {
             express: app
         });
 
