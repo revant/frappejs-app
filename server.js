@@ -11,5 +11,4 @@ server.start({
     static: './'
 }).then(()=>{
     authAPI.setup(frappe.app, config);
-    restAPI.setup(frappe.app);
 });
