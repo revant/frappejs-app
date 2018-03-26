@@ -5,6 +5,7 @@ const LocalStrategy = require('passport-local').Strategy;
 const BasicStrategy = require('passport-http').BasicStrategy;
 const ClientPasswordStrategy = require('passport-oauth2-client-password').Strategy;
 const BearerStrategy = require('passport-http-bearer').Strategy;
+const AuthorizationCodeStrategy = require('passport-oauth2-code').Strategy;
 const frappe = require('frappejs');
 
 /**
@@ -101,6 +102,33 @@ passport.use(new BearerStrategy(
   }
 ));
 
+/**
+ * The OAuth 2.0 authorization code authentication strategy authenticates
+ * clients using a client ID and client secret. The strategy requires a verify callback,
+ * which accepts those credentials and calls done providing a client.
+ */
+
+passport.use(new AuthorizationCodeStrategy(
+  async function(clientCode, clientId, clientSecret, redirectURI, verified) {
+    // verified(err, client, info);
+    frappe.db.getAll({
+      doctype: 'Session',
+      filters: { authorizationCode:clientCode },
+      limit: 1,
+      fields: ["*"]
+    }).then(async(success)=>{
+      if(success.length){
+        success = success[0];
+        let client = await frappe.db.get('OAuthClient', clientId);
+        let oauthClient = createClientFromDocType(client);
+        verified(null, oauthClient, null);
+      } else {
+        verified(new Error("Invalid Authorization Code"), null, null);
+      }
+    });
+  }
+));
+
 function createUserFromDocType(userDoc) {
   return {
     id: userDoc.name,
@@ -114,7 +142,7 @@ function createClientFromDocType(doc) {
   return {
     id: doc.name,
     name: doc.name,
-    clientId: doc.clientId,
+    clientId: doc.name,
     clientSecret: doc.clientSecret,
     isTrusted: doc.isTrusted
   };
