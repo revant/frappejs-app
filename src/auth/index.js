@@ -133,7 +133,7 @@ function createUserFromDocType(userDoc) {
   return {
     id: userDoc.name,
     username: userDoc.name,
-    password: userDoc.password,
+    // password: userDoc.password,
     name: userDoc.full_name
   };
 }

@@ -69,10 +69,23 @@ server.grant(oauth2orize.grant.code((client, redirectUri, user, ares, done) => {
 server.grant(oauth2orize.grant.token((client, user, ares, done) => {
   const token = utils.getUid(256);
   console.log("oauth2.server.grant.token", token, ares);
-  // db.accessTokens.save(token, user.id, client.clientId, (error) => {
-  //   if (error) return done(error);
-  //   return done(null, token);
-  // });
+  // set expiration time in ISO format
+  let now = new Date();
+  let expiry = 3600;
+
+  now.setHours(now.getSeconds() + expiry);
+  frappe.db.insert('Session', {
+    username: user,
+    session: JSON.stringify(frappe.request.session),
+    headers: JSON.stringify(frappe.request.headers),
+    clientId: client.clientId,
+    accessToken: token,
+    expirationTime:now.toISOString(),
+    expiry: expiry,
+    redirectUri: client.redirectUri
+  }).then((success)=>{
+    done(null, success.accessToken);
+  }).catch(error => done(error));
 }));
 
 // Exchange authorization codes for access tokens. The callback accepts the
