@@ -68,7 +68,7 @@ server.grant(oauth2orize.grant.code((client, redirectUri, user, ares, done) => {
 
 server.grant(oauth2orize.grant.token((client, user, ares, done) => {
   const token = utils.getUid(256);
-  console.log("oauth2.server.grant.token");
+  console.log("oauth2.server.grant.token", token, ares);
   // db.accessTokens.save(token, user.id, client.clientId, (error) => {
   //   if (error) return done(error);
   //   return done(null, token);
@@ -95,12 +95,27 @@ server.exchange(oauth2orize.exchange.code((client, code, redirectUri, done) => {
     }
     if (client.id !== success.clientId) return done(null, false);
     if (redirectUri !== success.redirectUri) return done(null, false);
-    const token = utils.getUid(256);
-    frappe.db.update('Session', {
-      name: success.name,
-      accessToken: token
-    }).then((success) => {
-      done(null, token);
+
+    let currentSession = success;
+    currentSession.accessToken = utils.getUid(256);
+    currentSession.refreshToken = utils.getUid(256);;
+    currentSession.expiry = 3600;
+    currentSession.session = JSON.stringify(frappe.request.session);
+    currentSession.headers = JSON.stringify(frappe.request.headers);
+
+    // set expiration time in ISO format
+    let now = new Date();
+    now.setHours(now.getSeconds() + currentSession.expiry);
+    currentSession.expirationTime = now.toISOString();
+
+    // clear code for invalidating
+    currentSession.authorizationCode = "";
+
+    frappe.db.update('Session', currentSession).then((success) => {
+      let params = {
+        "refresh_token":currentSession.refreshToken, "expires_in": currentSession.expiry
+      };
+      done(null, currentSession.accessToken, null, params);
     }).catch(error => done(error));
   }).catch(error => done(error));
 }));
@@ -209,7 +224,6 @@ exports.decision = [
   login.ensureLoggedIn(),
   server.decision(),
 ];
-
 
 // Token endpoint.
 //

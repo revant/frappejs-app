@@ -13,7 +13,7 @@ const login = require('connect-ensure-login');
 
 module.exports = {
     setup(app, config=null) {
-        this.setupFrappeApp(app);
+        this.setupFrappeApp(app, config);
         this.setupTemplating(app);
         app.use(cookieParser(config.session.cookieSecret));
         app.use(bodyParser.json({ extended: false }));
@@ -70,9 +70,9 @@ module.exports = {
         app.use(session(sess));
     },
 
-    setupFrappeApp(app){
+    setupFrappeApp(app, config){
         app.use((req, res, next) => {
-            console.log(`[${req.method}][${res.statusCode}] ${req.url}`);
+            if (config.requestLogging) console.log(`[${req.method}] ${req.url}`);
             frappe.request = req;
             frappe.response = res;
             next();

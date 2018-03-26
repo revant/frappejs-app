@@ -1,4 +1,5 @@
 var config = {};
+config.requestLogging = true;
 config.session = {};
 config.session.secret = "cats";
 config.session.cookieSecret = "cats";
