@@ -9,6 +9,8 @@ const frappe = require('frappejs');
 // Create OAuth 2.0 server
 const server = oauth2orize.createServer();
 
+const expiry = 3600 // 1 hr in seconds
+
 // Register serialialization and deserialization functions.
 //
 // When a client redirects a user to user authorization endpoint, an
@@ -68,10 +70,8 @@ server.grant(oauth2orize.grant.code((client, redirectUri, user, ares, done) => {
 
 server.grant(oauth2orize.grant.token((client, user, ares, done) => {
   const token = utils.getUid(256);
-  console.log("oauth2.server.grant.token", token, ares);
   // set expiration time in ISO format
   let now = new Date();
-  let expiry = 3600;
 
   now.setHours(now.getSeconds() + expiry);
   frappe.db.insert('Session', {
@@ -112,7 +112,7 @@ server.exchange(oauth2orize.exchange.code((client, code, redirectUri, done) => {
     let currentSession = success;
     currentSession.accessToken = utils.getUid(256);
     currentSession.refreshToken = utils.getUid(256);;
-    currentSession.expiry = 3600;
+    currentSession.expiry = expiry;
     currentSession.session = JSON.stringify(frappe.request.session);
     currentSession.headers = JSON.stringify(frappe.request.headers);
 
@@ -138,27 +138,41 @@ server.exchange(oauth2orize.exchange.code((client, code, redirectUri, done) => {
 // authorization request for verification. If these values are validated, the
 // application issues an access token on behalf of the user who authorized the code.
 
-// server.exchange(oauth2orize.exchange.password((client, username, password, scope, done) => {
-  // console.log("oauth2.server.exchange.password");
+server.exchange(oauth2orize.exchange.password((client, username, password, scope, done) => {
   // Validate the client
-  // db.clients.findByClientId(client.clientId, (error, localClient) => {
-  //   if (error) return done(error);
-  //   if (!localClient) return done(null, false);
-  //   if (localClient.clientSecret !== client.clientSecret) return done(null, false);
-  //   // Validate the user
-  //   db.users.findByUsername(username, (error, user) => {
-  //     if (error) return done(error);
-  //     if (!user) return done(null, false);
-  //     if (password !== user.password) return done(null, false);
-  //     // Everything validated, return the token
-  //     const token = utils.getUid(256);
-  //     db.accessTokens.save(token, user.id, client.clientId, (error) => {
-  //       if (error) return done(error);
-  //       return done(null, token);
-  //     });
-  //   });
-  // });
-// }));
+  frappe.db.get('OAuthClient', client.clientId).then(async(success)=>{
+    if (success.clientSecret !== client.clientSecret) return done(null, false);
+    // Validate the user
+    try {
+      let user = await frappe.db.get('User', username);
+      if(!user) return(null, false);
+      if(password != user.password) return done(null, false);
+      const token = utils.getUid(256);
+
+      let now = new Date();
+      now.setHours(now.getSeconds() + expiry);
+
+      frappe.db.insert('Session', {
+        username: user.name,
+        session: JSON.stringify(frappe.request.session),
+        headers: JSON.stringify(frappe.request.headers),
+        clientId: client.clientId,
+        accessToken: token,
+        refreshToken: utils.getUid(256),
+        expirationTime: now.toISOString(),
+        expiry: expiry,
+        redirectUri: client.redirectUri
+      }).then((success)=>{
+        let params = {
+          "refresh_token":success.refreshToken, "expires_in": success.expiry
+        };
+        done(null, success.accessToken, params);
+      }).catch(error => done(error));
+    } catch (error) {
+      done(error)
+    }
+  }).catch(error => done(error));
+}));
 
 // Exchange the client id and password/secret for an access token. The callback accepts the
 // `client`, which is exchanging the client's id and password/secret from the

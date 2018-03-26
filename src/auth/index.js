@@ -117,15 +117,14 @@ passport.use(new AuthorizationCodeStrategy(
       limit: 1,
       fields: ["*"]
     }).then(async(success)=>{
-      if(success.length){
-        success = success[0];
-        let client = await frappe.db.get('OAuthClient', clientId);
-        let oauthClient = createClientFromDocType(client);
+      let client = await frappe.db.get('OAuthClient', clientId);
+      let oauthClient = createClientFromDocType(client);
+      if(success.length || frappe.request.body.password){
         verified(null, oauthClient, null);
       } else {
-        verified(new Error("Invalid Authorization Code"), null, null);
+        verified(new Error("Invalid Credentials"), null, null);
       }
-    });
+    }).catch(error => verified(error, null, null));
   }
 ));
 
