@@ -24,6 +24,11 @@ module.exports = {
             "fieldtype": "Data"
         },
         {
+            "fieldname": "redirectUri",
+            "label": "Redirect URI",
+            "fieldtype": "Data"
+        },
+        {
             "fieldname": "isTrusted",
             "label": "Trusted App",
             "fieldtype": "Check"

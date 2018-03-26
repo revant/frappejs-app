@@ -4,6 +4,7 @@ const oauth2orize = require('oauth2orize');
 const passport = require('passport');
 const login = require('connect-ensure-login');
 const utils = require('../utils');
+const frappe = require('frappejs');
 
 // Create OAuth 2.0 server
 const server = oauth2orize.createServer();
@@ -21,13 +22,15 @@ const server = oauth2orize.createServer();
 // simple matter of serializing the client's ID, and deserializing by finding
 // the client by ID from the database.
 
-server.serializeClient((client, done) => done(null, client.id));
+server.serializeClient((client, done) => {
+  done(null, client.id)
+});
 
 server.deserializeClient((id, done) => {
-  // db.clients.findById(id, (error, client) => {
-  //   if (error) return done(error);
-  //   return done(null, client);
-  // });
+  console.log("server.deserializeClient");
+  frappe.db.get("OAuthClient", id)
+  .then(success => success.name && done(null, mapOAuthClient(success)))
+  .catch(error => done(error));
 });
 
 // Register supported grant types.
@@ -46,10 +49,17 @@ server.deserializeClient((id, done) => {
 
 server.grant(oauth2orize.grant.code((client, redirectUri, user, ares, done) => {
   const code = utils.getUid(16);
-  // db.authorizationCodes.save(code, client.id, redirectUri, user.id, (error) => {
-  //   if (error) return done(error);
-  //   return done(null, code);
-  // });
+  console.log("oauth2.server.grant.code", code);
+  frappe.db.insert('Session', {
+    clientId: client.id,
+    redirectUri: redirectUri,
+    username: user.id,
+    authorizationCode: code
+  }).then(success => {
+    return done(null, code);
+  }).catch(error => {
+    return done(error);
+  });
 }));
 
 // Grant implicit authorization. The callback takes the `client` requesting
@@ -60,6 +70,7 @@ server.grant(oauth2orize.grant.code((client, redirectUri, user, ares, done) => {
 
 server.grant(oauth2orize.grant.token((client, user, ares, done) => {
   const token = utils.getUid(256);
+  console.log("oauth2.server.grant.token");
   // db.accessTokens.save(token, user.id, client.clientId, (error) => {
   //   if (error) return done(error);
   //   return done(null, token);
@@ -73,6 +84,7 @@ server.grant(oauth2orize.grant.token((client, user, ares, done) => {
 // code.
 
 server.exchange(oauth2orize.exchange.code((client, code, redirectUri, done) => {
+  console.log("oauth2.server.exchange.code");
   // db.authorizationCodes.find(code, (error, authCode) => {
   //   if (error) return done(error);
   //   if (client.id !== authCode.clientId) return done(null, false);
@@ -92,6 +104,7 @@ server.exchange(oauth2orize.exchange.code((client, code, redirectUri, done) => {
 // application issues an access token on behalf of the user who authorized the code.
 
 server.exchange(oauth2orize.exchange.password((client, username, password, scope, done) => {
+  console.log("oauth2.server.exchange.password");
   // Validate the client
   // db.clients.findByClientId(client.clientId, (error, localClient) => {
   //   if (error) return done(error);
@@ -118,6 +131,7 @@ server.exchange(oauth2orize.exchange.password((client, username, password, scope
 // application issues an access token on behalf of the client who authorized the code.
 
 server.exchange(oauth2orize.exchange.clientCredentials((client, scope, done) => {
+  console.log("oauth2.server.exchange.clientCredentials");
   // Validate the client
   // db.clients.findByClientId(client.clientId, (error, localClient) => {
   //   if (error) return done(error);
@@ -151,28 +165,26 @@ server.exchange(oauth2orize.exchange.clientCredentials((client, scope, done) => 
 
 module.exports.authorization = [
   login.ensureLoggedIn(),
-  server.authorization((clientId, redirectUri, done) => {
-    // db.clients.findByClientId(clientId, (error, client) => {
-    //   if (error) return done(error);
-    //   // WARNING: For security purposes, it is highly advisable to check that
-    //   //          redirectUri provided by the client matches one registered with
-    //   //          the server. For simplicity, this example does not. You have
-    //   //          been warned.
-    //   return done(null, client, redirectUri);
-    // });
+  server.authorization(async(clientId, redirectUri, done) => {
+    frappe.db.get("OAuthClient", clientId).then((client) => {
+      if(!client.name) done(new Error("Client not registered"));
+      if(client.redirectUri != redirectUri) done(new Error("Redirect URI Mismatch"));
+      let oauthClient = mapOAuthClient(client)
+      done(null, oauthClient, oauthClient.redirectUri);
+    }).catch(e => done(e));
   }, (client, user, done) => {
     // Check if grant request qualifies for immediate approval
-
+    console.log("approval");
     // Auto-approve
     if (client.isTrusted) return done(null, true);
 
-    // db.accessTokens.findByUserIdAndClientId(user.id, client.clientId, (error, token) => {
-    //   // Auto-approve
-    //   if (token) return done(null, true);
-
-    //   // Otherwise ask user
-    //   return done(null, false);
-    // });
+    return done(null, false);
+    frappe.db.getAll({
+      doctype: 'Session',
+      filters: { username:user.id, clientId:client.clientId }
+    })
+    .then((success) => success.length && done(null, true))
+    .catch(error => done(null, false));
   }),
   (request, response) => {
     response.render('src/views/dialog', { transactionId: request.oauth2.transactionID, user: request.user, client: request.oauth2.client });
@@ -204,3 +216,14 @@ exports.token = [
   server.token(),
   server.errorHandler(),
 ];
+
+function mapOAuthClient(client){
+  return {
+    id: client.name,
+    name: client.appName,
+    clientId: client.name,
+    clientSecret: client.clientSecret,
+    isTrusted: client.isTrusted,
+    redirectUri: client.redirectUri
+  }
+}
