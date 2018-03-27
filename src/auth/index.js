@@ -7,6 +7,21 @@ const ClientPasswordStrategy = require('passport-oauth2-client-password').Strate
 const BearerStrategy = require('passport-http-bearer').Strategy;
 const AuthorizationCodeStrategy = require('passport-oauth2-code').Strategy;
 const frappe = require('frappejs');
+const RefreshTokenStrategy = require('../RefreshTokenStrategy');
+
+/**
+ * BasicStrategy 
+ */
+function verifyUsernamePassword(req, username, password, done) {
+  frappe.db.get("User", username).then((success) => {
+    if (!success.name) return done(null, false);
+    if (success.password !== password) return done(null, false);
+    let user = createUserFromDocType(success);
+    return done(null, user);
+  }).catch((error) => {
+    done(error);
+  });
+}
 
 /**
  * LocalStrategy
@@ -15,18 +30,7 @@ const frappe = require('frappejs');
  * Anytime a request is made to authorize an application, we must ensure that
  * a user is logged in before asking them to approve the request.
  */
-passport.use(new LocalStrategy(
-  (username, password, done) => {
-    frappe.db.get("User", username).then((success) => {
-      if (success.password !== password) return done(null, false);
-      if (!success.name) return done(null, false);
-      const user = createUserFromDocType(success);
-      done(null, user);
-    }).catch((error) => {
-      done(error);
-    });
-  }
-));
+passport.use(new LocalStrategy({ passReqToCallback:true }, verifyUsernamePassword));
 
 passport.serializeUser((user, done) => done(null, user.username));
 
@@ -38,7 +42,7 @@ passport.deserializeUser((username, done) => {
 });
 
 /**
- * BasicStrategy & ClientPasswordStrategy
+ * ClientPasswordStrategy
  *
  * These strategies are used to authenticate registered OAuth clients. They are
  * employed to protect the `token` endpoint, which consumers use to obtain
@@ -48,7 +52,7 @@ passport.deserializeUser((username, done) => {
  * to the `Authorization` header). While this approach is not recommended by
  * the specification, in practice it is quite common.
  */
-function verifyClient(clientId, clientSecret, done) {
+function verifyClient(req, clientId, clientSecret, done) {
   frappe.db.get("OAuthClient", clientId).then((success) => {
     if (!success.name) return done(null, false);
     if (client.clientSecret !== clientSecret) return done(null, false);
@@ -59,9 +63,9 @@ function verifyClient(clientId, clientSecret, done) {
   });
 }
 
-passport.use(new BasicStrategy(verifyClient));
+passport.use(new BasicStrategy({ passReqToCallback:true }, verifyUsernamePassword));
 
-passport.use(new ClientPasswordStrategy(verifyClient));
+passport.use(new ClientPasswordStrategy({ passReqToCallback:true }, verifyClient));
 
 /**
  * BearerStrategy
@@ -71,8 +75,9 @@ passport.use(new ClientPasswordStrategy(verifyClient));
  * application, which is issued an access token to make requests on behalf of
  * the authorizing user.
  */
-passport.use(new BearerStrategy(
-  async(accessToken, done) => {
+passport.use(new BearerStrategy( { passReqToCallback:true },
+  async(req, accessToken, done) => {
+    // if (req.headers['Authorization'] == "Bearer"){}
     let filters = {accessToken:accessToken}
     var bearerToken = null;
     try {
@@ -108,23 +113,54 @@ passport.use(new BearerStrategy(
  * which accepts those credentials and calls done providing a client.
  */
 
-passport.use(new AuthorizationCodeStrategy(
-  async function(clientCode, clientId, clientSecret, redirectURI, verified) {
+passport.use(new AuthorizationCodeStrategy( {passReqToCallback:true},
+  async function(req, clientCode, clientId, clientSecret, redirectURI, verified) {
     // verified(err, client, info);
-    frappe.db.getAll({
-      doctype: 'Session',
-      filters: { authorizationCode:clientCode },
-      limit: 1,
-      fields: ["*"]
-    }).then(async(success)=>{
-      let client = await frappe.db.get('OAuthClient', clientId);
-      let oauthClient = createClientFromDocType(client);
-      if(success.length || frappe.request.body.password){
-        verified(null, oauthClient, null);
-      } else {
-        verified(new Error("Invalid Credentials"), null, null);
-      }
-    }).catch(error => verified(error, null, null));
+    if (req.body.grant_type == 'authorization_code'){
+      frappe.db.getAll({
+        doctype: 'Session',
+        filters: { authorizationCode:clientCode },
+        limit: 1,
+        fields: ["*"]
+      }).then(async(success)=>{
+        let client = await frappe.db.get('OAuthClient', clientId);
+        let oauthClient = createClientFromDocType(client);
+        if(success.length){
+          verified(null, oauthClient, null);
+        } else {
+          verified(new Error("Invalid Authorization Code"), null, null);
+        }
+      }).catch(error => verified(error, null, null));
+    } else verified(null, null, null);
+  }
+));
+
+/**
+ * The OAuth 2.0 authorization refresh token strategy authenticates
+ * clients using a client ID and refresh token. The strategy requires a verify callback,
+ * which accepts those credentials and calls done providing a client.
+ */
+
+passport.use(new RefreshTokenStrategy( {passReqToCallback:true},
+  async function(req, refreshToken, clientId, redirectURI, verified) {
+    // verified(err, client, info);
+    if (req.body.grant_type == 'refresh_token') {
+      frappe.db.getAll({
+        doctype: 'Session',
+        filters: { refreshToken:refreshToken },
+        limit: 1,
+        fields: ["*"]
+      }).then(async(success)=>{
+        let client = await frappe.db.get('OAuthClient', clientId);
+        let oauthClient = createClientFromDocType(client);
+        if(success.length){
+          let user = await frappe.db.get('User', success[0].username);
+          verified(null, createUserFromDocType(user), null);
+        } else {
+          verified(new Error("Invalid Refresh Code"), null, null);
+        }
+      }).catch(error => verified(error, null, null));
+    } else verified(null, null, null);
   }
 ));
 

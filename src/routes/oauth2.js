@@ -5,7 +5,7 @@ const passport = require('passport');
 const login = require('connect-ensure-login');
 const utils = require('../utils');
 const frappe = require('frappejs');
-
+const auth = require('../auth');
 // Create OAuth 2.0 server
 const server = oauth2orize.createServer();
 
@@ -75,7 +75,7 @@ server.grant(oauth2orize.grant.token((client, user, ares, done) => {
 
   now.setHours(now.getSeconds() + expiry);
   frappe.db.insert('Session', {
-    username: user,
+    username: user.username,
     session: JSON.stringify(frappe.request.session),
     headers: JSON.stringify(frappe.request.headers),
     clientId: client.clientId,
@@ -115,7 +115,7 @@ server.exchange(oauth2orize.exchange.code((client, code, redirectUri, done) => {
     currentSession.expiry = expiry;
     currentSession.session = JSON.stringify(frappe.request.session);
     currentSession.headers = JSON.stringify(frappe.request.headers);
-
+    currentSession.redirectUri = redirectUri;
     // set expiration time in ISO format
     let now = new Date();
     now.setHours(now.getSeconds() + currentSession.expiry);
@@ -140,6 +140,7 @@ server.exchange(oauth2orize.exchange.code((client, code, redirectUri, done) => {
 
 server.exchange(oauth2orize.exchange.password((client, username, password, scope, done) => {
   // Validate the client
+  console.log('oauth2orize.exchange.password');
   frappe.db.get('OAuthClient', client.clientId).then(async(success)=>{
     if (success.clientSecret !== client.clientSecret) return done(null, false);
     // Validate the user
@@ -179,22 +180,62 @@ server.exchange(oauth2orize.exchange.password((client, username, password, scope
 // authorization request for verification. If these values are validated, the
 // application issues an access token on behalf of the client who authorized the code.
 
-// server.exchange(oauth2orize.exchange.clientCredentials((client, scope, done) => {
-//   console.log("oauth2.server.exchange.clientCredentials");
+server.exchange(oauth2orize.exchange.clientCredentials((client, scope, done) => {
   // Validate the client
-  // db.clients.findByClientId(client.clientId, (error, localClient) => {
-  //   if (error) return done(error);
-  //   if (!localClient) return done(null, false);
-  //   if (localClient.clientSecret !== client.clientSecret) return done(null, false);
-  //   // Everything validated, return the token
-  //   const token = utils.getUid(256);
-  //   // Pass in a null for user id since there is no user with this grant type
-  //   db.accessTokens.save(token, null, client.clientId, (error) => {
-  //     if (error) return done(error);
-  //     return done(null, token);
-  //   });
-  // });
-// }));
+  frappe.db.get('OAuthClient', client.clientId).then(async(success)=>{
+    if (success.clientSecret !== client.clientSecret) return done(null, false);
+    // Validate the Scope (Scope is tied with roles, permissions and general access control)
+    // if (success.scopes.split(' ').indexOf(scope)) {
+    //   const token = utils.getUid(256);
+
+    //   let now = new Date();
+    //   now.setHours(now.getSeconds() + expiry);
+
+    //   frappe.db.insert('Session', {
+    //     session: JSON.stringify(frappe.request.session),
+    //     headers: JSON.stringify(frappe.request.headers),
+    //     clientId: client.clientId,
+    //     accessToken: token,
+    //     expirationTime: now.toISOString(),
+    //     expiry: expiry,
+    //     redirectUri: client.redirectUri
+    //   }).then((success)=>{
+    //     let params = { "expires_in": success.expiry };
+    //     done(null, success.accessToken, params);
+    //   }).catch(error => done(error));
+    // }
+  }).catch(error => done(error));
+}));
+
+server.exchange(oauth2orize.exchange.refreshToken(function(client, refreshToken, scope, done) {
+  frappe.db.getAll({
+    doctype: 'Session',
+    filters: { refreshToken:refreshToken },
+    limit: 1,
+    fields: ["*"]
+  }).then((success) => {
+    if (success.length) {
+      success = success[0];
+      let now = new Date();
+      now.setHours(now.getSeconds() + expiry);
+      let currentSession = success;
+      delete currentSession.name;
+      currentSession.accessToken = utils.getUid(256);
+      currentSession.refreshToken = utils.getUid(256);
+      currentSession.expiry = expiry;
+      currentSession.expirationTime = now.toISOString();
+      currentSession.session = JSON.stringify(frappe.request.session);
+      currentSession.headers = JSON.stringify(frappe.request.headers);
+      frappe.db.insert('Session', currentSession).then((success) => {
+        let params = {
+          "refresh_token":currentSession.refreshToken, "expires_in": currentSession.expiry
+        };
+        done(null, currentSession.accessToken, null, params);
+      });
+    } else done(new Error("Invalid Refresh Token"));
+  }).catch(error => done(error));
+}));
+
 
 // User authorization endpoint.
 //
@@ -260,7 +301,14 @@ exports.decision = [
 // authenticate when making requests to this endpoint.
 
 exports.token = [
-  passport.authenticate(['basic', 'oauth2-client-password', 'oauth2-code'], { session: false }),
+  passport.authenticate(
+    [
+      'basic',
+      'oauth2-client-password',
+      'oauth2-code',
+      'oauth2-refresh-token'
+    ],
+    { session: false }),
   server.token(),
   server.errorHandler(),
 ];

@@ -27,7 +27,7 @@ module.exports = {
         require('./auth');
 
         app.get('/', (request, response) => response.redirect('/app'));
-        app.get('/app', login.ensureLoggedIn(), (req, res)=> res.render('app'));
+        app.get('/app', login.ensureLoggedIn(), (req, res)=> res.render('./www/app'));
         app.get('/login', routes.site.loginForm);
         app.post('/login', routes.site.login);
         app.get('/logout', routes.site.logout);
