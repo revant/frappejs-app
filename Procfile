@@ -1,2 +1,2 @@
-server: nodemon server.js
+server: nodemon start.js
 watch: rollup -c --watch
